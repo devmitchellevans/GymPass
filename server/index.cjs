@@ -11,7 +11,7 @@ const PORT = Number(process.env.PORT) || 3000;
 const dataDir = path.join(__dirname, '..', 'data');
 fs.mkdirSync(dataDir, { recursive: true });
 
-const db = new Database(process.env.DATA_DIR || path.join(__dirname, '..', 'data'));
+const db = new Database(path.join(__dirname, '..', 'data'));
 db.pragma('journal_mode = WAL');
 db.exec(`
   CREATE TABLE IF NOT EXISTS members (
