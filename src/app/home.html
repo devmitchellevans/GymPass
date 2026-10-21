@@ -1,0 +1,145 @@
+<div class="shell">
+  <header class="hero">
+    <p class="eyebrow">Member check-in</p>
+    <h1>GymPass</h1>
+    <p class="lede">Add members, issue a QR pass, then scan it to log every check-in.</p>
+    <div class="actions">
+      <button type="button" class="btn primary" (click)="openAddMember()">Add member</button>
+      <button type="button" class="btn ghost" (click)="openScanner()">Scan QR</button>
+    </div>
+    @if (notice()) {
+      <p class="banner success">{{ notice() }}</p>
+    }
+    @if (loadError()) {
+      <p class="banner warn">{{ loadError() }}</p>
+    }
+  </header>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Check-in log</h2>
+      <button type="button" class="text-btn" (click)="refreshLogs()">Refresh</button>
+    </div>
+    @if (checkIns().length === 0) {
+      <p class="empty">No check-ins yet. Scan a member QR to start the log.</p>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Check-in time</th>
+              <th>Membership</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of checkIns(); track row.id) {
+              <tr>
+                <td>
+                  <strong>{{ row.memberName }}</strong>
+                  <span class="muted">{{ row.memberId }}</span>
+                </td>
+                <td>{{ row.checkedInAt | date: 'medium' }}</td>
+                <td>
+                  <span class="status" [class.expired]="row.membershipStatus === 'expired'">
+                    {{ row.membershipStatus | titlecase }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+</div>
+
+@if (addOpen()) {
+  <div class="modal-backdrop" (click)="closeAddMember()">
+    <section class="modal" (click)="$event.stopPropagation()" role="dialog" aria-labelledby="add-title">
+      <h2 id="add-title">Add member</h2>
+      <form [formGroup]="memberForm" (ngSubmit)="addMember()">
+        <label>
+          Name
+          <input formControlName="name" autocomplete="name" />
+        </label>
+        <label>
+          Contact number
+          <input formControlName="contactNumber" autocomplete="tel" />
+        </label>
+        <label>
+          Email
+          <input formControlName="email" type="email" autocomplete="email" />
+        </label>
+        <label>
+          Membership expires
+          <input formControlName="expiresOn" type="date" />
+        </label>
+        @if (addError()) {
+          <p class="form-error">{{ addError() }}</p>
+        }
+        <div class="modal-actions">
+          <button type="button" class="btn ghost" (click)="closeAddMember()" [disabled]="saving()">Cancel</button>
+          <button type="submit" class="btn primary" [disabled]="saving()">
+            {{ saving() ? 'Adding…' : 'Add member' }}
+          </button>
+        </div>
+      </form>
+    </section>
+  </div>
+}
+
+@if (passOpen() && createdMember(); as member) {
+  <div class="modal-backdrop" (click)="closePass()">
+    <section class="modal pass" (click)="$event.stopPropagation()" role="dialog" aria-labelledby="pass-title">
+      <h2 id="pass-title">Member QR ready</h2>
+      <p class="muted">Save this QR or email it. Scanning it logs {{ member.name }} into GymPass.</p>
+      <p class="member-id">{{ member.id }}</p>
+      <img [src]="qrCode()" [alt]="'QR code for ' + member.id" />
+      @if (emailNotice()) {
+        <p class="banner success">{{ emailNotice() }}</p>
+      }
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" (click)="saveQr()">Save QR</button>
+        <button type="button" class="btn ghost" (click)="emailQr()" [disabled]="emailing()">
+          {{ emailing() ? 'Sending…' : 'Send via email' }}
+        </button>
+        <button type="button" class="btn primary" (click)="closePass()">Done</button>
+      </div>
+    </section>
+  </div>
+}
+
+@if (scanOpen()) {
+  <div class="modal-backdrop">
+    <section class="modal scan" role="dialog" aria-labelledby="scan-title">
+      <h2 id="scan-title">Scan QR</h2>
+      <p class="muted">Hold the member QR in front of the camera.</p>
+      <div id="qr-reader" #scannerHost class="scanner"></div>
+      <label class="file-scan">
+        Or choose a saved QR image
+        <input type="file" accept="image/*" (change)="scanQrFile($event)" />
+      </label>
+      @if (scanError()) {
+        <p class="form-error">{{ scanError() }}</p>
+      }
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" (click)="closeScanner()">Close</button>
+      </div>
+    </section>
+  </div>
+}
+
+@if (expiredOpen()) {
+  <div class="modal-backdrop" (click)="closeExpired()">
+    <section class="modal expired" (click)="$event.stopPropagation()" role="dialog" aria-labelledby="expired-title">
+      <h2 id="expired-title">Membership Status: Expired</h2>
+      @if (expiredMember(); as member) {
+        <p>{{ member.name }} was logged, but this membership ended on {{ member.expiresOn }}.</p>
+      }
+      <div class="modal-actions">
+        <button type="button" class="btn primary" (click)="closeExpired()">OK</button>
+      </div>
+    </section>
+  </div>
+}

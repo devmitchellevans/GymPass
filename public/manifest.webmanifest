@@ -1,0 +1,25 @@
+{
+  "name": "GymPass",
+  "short_name": "GymPass",
+  "description": "Gym member check-in kiosk with QR codes and local logs.",
+  "display": "standalone",
+  "orientation": "any",
+  "scope": "/",
+  "start_url": "/",
+  "background_color": "#0c1612",
+  "theme_color": "#0c1612",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
