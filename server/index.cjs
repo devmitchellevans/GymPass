@@ -259,6 +259,6 @@ if (fs.existsSync(browserDist)) {
   });
 }
 
-app.listen(PORT, () => {
-  console.log(`GymPass API running on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`GymPass API listening on port ${PORT}`);
 });
