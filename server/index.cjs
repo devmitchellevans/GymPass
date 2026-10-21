@@ -11,7 +11,7 @@ const PORT = Number(process.env.PORT) || 3000;
 const dataDir = path.join(__dirname, '..', 'data');
 fs.mkdirSync(dataDir, { recursive: true });
 
-const db = new Database(path.join(dataDir, 'gympass.db'));
+const db = new Database(process.env.DATA_DIR || path.join(__dirname, '..', 'data'));
 db.pragma('journal_mode = WAL');
 db.exec(`
   CREATE TABLE IF NOT EXISTS members (
@@ -103,7 +103,28 @@ function mailTransport() {
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '1mb' }));
+const OWNER_KEY = process.env.OWNER_KEY || '';
+if (!OWNER_KEY) {
+  console.warn('OWNER_KEY is not set: all /api routes except /api/health will return 401.');
+}
 
+function requireOwner(req, res, next) {
+  const provided = Buffer.from(String(req.get('x-owner-key') ?? ''));
+  const expected = Buffer.from(OWNER_KEY);
+  const ok =
+    expected.length > 0 &&
+    provided.length === expected.length &&
+    crypto.timingSafeEqual(provided, expected);
+  if (!ok) {
+    return res.status(401).json({ error: 'Unauthorized.' });
+  }
+  next();
+}
+
+// Protect everything under /api except the health check
+app.use('/api', (req, res, next) =>
+  req.path === '/health' ? next() : requireOwner(req, res, next),
+);
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true });
 });
