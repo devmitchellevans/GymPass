@@ -20,3 +20,44 @@ button,
 input {
   font: inherit;
 }
+/* 
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow-x: hidden;            
+  overflow-y: auto;              
+  overscroll-behavior: none;    
+  touch-action: pan-y;           
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-overflow-scrolling: touch;
+} */
+
+/* Hide every scrollbar, but keep scrolling working */
+/* * {
+  scrollbar-width: none;         
+  -ms-overflow-style: none;      
+}
+*::-webkit-scrollbar {
+  display: none;                 
+  width: 0;
+  height: 0;
+} */
+
+/* Feels like an app: no accidental text selection or image dragging on UI */
+/* body {
+  -webkit-user-select: none;
+  user-select: none;
+}
+input,
+textarea {
+  -webkit-user-select: text;
+  user-select: text;
+  font-size: 16px;               
+}
+img {
+  -webkit-user-drag: none;
+}
+  .table-wrap { touch-action: manipulation }   */
+  

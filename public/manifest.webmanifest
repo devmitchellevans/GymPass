@@ -1,25 +1,30 @@
 {
+  "id": "/",
   "name": "GymPass",
   "short_name": "GymPass",
-  "description": "Gym member check-in kiosk with QR codes and local logs.",
+  "description": "Gym member check-in with QR codes. Works offline and syncs when the network returns.",
+  "lang": "en",
+  "dir": "ltr",
   "display": "standalone",
   "orientation": "any",
   "scope": "/",
-  "start_url": "/",
+  "start_url": "/?source=pwa",
   "background_color": "#0c1612",
   "theme_color": "#0c1612",
+  "categories": ["fitness", "business", "productivity"],
   "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
     {
-      "src": "icons/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    },
-    {
-      "src": "icons/icon.svg",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "maskable"
+      "name": "Kiosk check-in",
+      "short_name": "Kiosk",
+      "description": "Self-service QR check-in screen",
+      "url": "/kiosk",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ]
 }

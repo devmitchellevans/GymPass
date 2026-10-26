@@ -46,3 +46,6 @@ Thumbs.db
 # Local gym database
 /data/*.db
 /data/*.db-*
+
+# Local TLS material (private key!)
+/certs

@@ -24,8 +24,13 @@
                 "input": "public"
               }
             ],
-            "styles": ["src/styles.css"],
-            "serviceWorker": "ngsw-config.json"
+            "styles": [
+              "src/styles.css"
+            ],
+            "serviceWorker": "ngsw-config.json",
+            "allowedCommonJsDependencies": [
+              "qrcode"
+            ]
           },
           "configurations": {
             "production": {
@@ -67,7 +72,12 @@
           "defaultConfiguration": "development"
         },
         "test": {
-          "builder": "@angular/build:unit-test"
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "setupFiles": [
+              "src/test-setup.ts"
+            ]
+          }
         }
       }
     }
