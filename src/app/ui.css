@@ -261,3 +261,53 @@ a.btn {
 input[type='search'] {
   min-width: 0;
 }
+
+/* ---- Phones: stack table rows as cards so nothing is wider than the screen ---- */
+@media (max-width: 640px) {
+  .shell {
+    padding: 1.5rem 1rem 3rem;
+  }
+
+  .table-wrap {
+    overflow-x: visible;
+  }
+
+  table,
+  tbody,
+  tr,
+  td {
+    display: block;
+    width: 100%;
+  }
+
+  thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  tr {
+    padding: 0.85rem 0;
+    border-bottom: 1px solid #234033;
+  }
+
+  tr:last-child {
+    border-bottom: 0;
+  }
+
+  td {
+    border: 0;
+    padding: 0.15rem 0;
+  }
+
+  .row-actions {
+    margin-top: 0.4rem;
+  }
+
+  .modal {
+    max-height: 92vh;
+    overflow-y: auto;
+  }
+}

@@ -88,7 +88,7 @@ What the key does **not** do:
 | Generate a member's QR | ✅ (ID and QR are created on the device) |
 | Check in at `/kiosk` (QR, name or ID) | ✅ for any member the device has already downloaded |
 | View check-in log | ✅ |
-| Send the QR by email from the server | ❌ needs the server's mail account; the app offers *Share image…* or *Open email app* instead |
+| Send the QR by email from the server | ❌ needs the server; use **Share…** (works offline) to attach the picture in Gmail/Mail |
 
 The header chip shows `Online · all synced`, `Offline · N waiting to sync`, etc. Pending rows are tagged
 **waiting to sync** in the log.
@@ -107,11 +107,26 @@ The header chip shows `Online · all synced`, `Offline · N waiting to sync`, et
 * **Add member** works as before: it creates the member and shows the QR, with **Save QR** and
   **Send via email**.
 
-**Email with the QR attached.** When the server has an email account configured (`SMTP_HOST`, …), the
-message shows the QR inside the email *and* attaches it as a PNG file. If the server can't send (offline or
-no mail account), the app shows two alternatives: **Share image…** (phones / some desktops: hands the PNG to
-your mail app already attached) and **Open email app** (saves the PNG to Downloads and opens a draft; a web
-page cannot attach files to a `mailto:` link, so you attach the saved image yourself).
+**Sending or saving a member's QR (phones, tablets and laptops)**
+
+| Button | What it does |
+|---|---|
+| **Send via email** | The *server* emails the member with the QR inside the message **and** attached as a PNG. Works from any device, but needs the email account set up (below) and a connection to the server. |
+| **Share…** | Opens the phone's share sheet with the QR picture attached: pick Gmail, Mail, WhatsApp, Messages, AirDrop… Needs **https** (see section 2). Hidden where the browser can't share files. |
+| **Save QR** | Laptop / Android: downloads `GP-XXXXXXXX.png`. iPhone / iPad: opens the share sheet, where you choose **Save Image**. (iOS ignores download links in web apps.) |
+| **Open email app** | Shown only when the server can't send. Starts a draft addressed to the member with their ID. **A web page cannot attach a picture to a mail link**, so use **Share…** to attach the image. |
+
+You can also press and hold the QR picture on a phone to save or share it.
+
+### Setting up server email (one time)
+
+1. Copy `.env.example` to `.env` (same folder as `package.json`) and fill it in. For Gmail, create an
+   **App password** (Google Account → Security → 2-Step Verification → App passwords) and use it as
+   `SMTP_PASS`; your normal Gmail password will not work.
+2. Restart `npm run demo`. Real environment variables override `.env`; `.env` is git-ignored.
+
+If sending fails, the dialog says why: *no email account set up*, *the email account refused the login*, or
+*could not reach the email provider*.
 
 **Sync rules**
 * Check-ins and members get a unique ID on the device, and the server ignores repeats, so a retry can
@@ -158,6 +173,19 @@ chrome --kiosk --app=https://<pc-ip>:3443/kiosk
 
 Built-in hooks for the next steps: every check-in records a `deviceId`, so you can tell kiosks apart.
 
+## 4b. App-like behaviour on phones
+
+* Pinch-zoom and double-tap zoom are disabled, only vertical scrolling is allowed, and scrollbars are hidden
+  (`src/styles.css`, the viewport tag in `src/index.html`, and a small gesture block in `src/main.ts`
+  for iOS, which ignores the viewport setting).
+* **Rule to keep it working:** nothing on a page may be wider than the screen. If it is, iOS Safari shrinks
+  the whole page to fit it, and with zoom locked you can't zoom back in. That's why lists switch to stacked
+  cards below 640 px wide (`src/app/ui.css`). If you add a wide element (table, image, long unbroken text),
+  make it wrap or give it `max-width: 100%`.
+* Zoom lock makes the app harder to read for people with low vision. It suits staff tablets and the kiosk;
+  if members use the app on their own phones, consider allowing zoom (remove `maximum-scale` and
+  `user-scalable=no` from `src/index.html`).
+
 ## 5. Roadmap / ideas
 * Staff PIN to leave kiosk mode; per-device names ("Front desk")
 * Per-user logins / roles instead of one shared key (e.g. separate kiosk and owner access)
@@ -175,5 +203,5 @@ Built-in hooks for the next steps: every check-in records a `deviceId`, so you c
 | `npm run dev` | live-reload development (service worker disabled) |
 | `npm test` | unit tests (offline data layer + sync) |
 
-Environment variables: `GYMPASS_ACCESS_KEY`, `PORT`, `HTTPS_PORT`, `GYMPASS_CERT_DIR`, `GYMPASS_TLS_KEY`, `GYMPASS_TLS_CERT`,
+Settings can go in a `.env` file (see `.env.example`) or be real environment variables: `GYMPASS_ACCESS_KEY`, `PORT`, `HTTPS_PORT`, `GYMPASS_CERT_DIR`, `GYMPASS_TLS_KEY`, `GYMPASS_TLS_CERT`,
 plus the existing `SMTP_*` / `MAIL_FROM`.

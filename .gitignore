@@ -49,3 +49,6 @@ Thumbs.db
 
 # Local TLS material (private key!)
 /certs
+
+# Local secrets
+.env

@@ -190,21 +190,28 @@
   <div class="modal-backdrop" (click)="closePass()">
     <section class="modal pass" (click)="$event.stopPropagation()" role="dialog" aria-labelledby="pass-title">
       <h2 id="pass-title">Member QR ready</h2>
-      <p class="muted">Save this QR or email it. Scanning it at the kiosk logs {{ member.name }} into GymPass.</p>
+      <p class="muted">Scanning this at the kiosk logs {{ member.name }} into GymPass.</p>
       <p class="member-id">{{ member.id }}</p>
       <img [src]="qrCode()" [alt]="'QR code for ' + member.id" />
-      @if (emailNotice()) {
-        <p class="banner success" role="status">{{ emailNotice() }}</p>
+      <p class="section-label">On a phone you can also press and hold the picture to save or share it.</p>
+      @if (passNotice()) {
+        <p class="banner success" role="status">{{ passNotice() }}</p>
       }
       @if (emailFallback()) {
-        <div class="modal-actions">
-          @if (canShareFiles) {
-            <button type="button" class="btn ghost" (click)="shareQr()">Share image…</button>
-          }
-          <button type="button" class="btn ghost" (click)="openMailApp()">Open email app</button>
+        <div class="fallback">
+          <p class="section-label">
+            Other ways to send it: <strong>Share…</strong> attaches the picture in Gmail, Mail, WhatsApp and others.
+            <strong>Open email app</strong> starts a draft with the ID only, because web pages cannot attach files to a mail link.
+          </p>
+          <a class="btn ghost" [href]="mailtoHref()">Open email app</a>
         </div>
       }
       <div class="modal-actions">
+        @if (canShareFiles) {
+          <button type="button" class="btn ghost" (click)="shareQr()">Share…</button>
+        } @else if (!secure) {
+          <p class="section-label">Sharing needs a secure (https) connection. See OFFLINE.md.</p>
+        }
         <button type="button" class="btn ghost" (click)="saveQr()">Save QR</button>
         <button type="button" class="btn ghost" (click)="emailQr()" [disabled]="emailing()">
           {{ emailing() ? 'Sending…' : 'Send via email' }}

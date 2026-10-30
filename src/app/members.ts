@@ -71,7 +71,7 @@ export class Members {
   readonly passMember = signal<Member | null>(null);
   readonly qrCode = signal('');
   readonly emailing = signal(false);
-  readonly emailNotice = signal('');
+  readonly passNotice = signal('');
   readonly emailFallback = signal(false);
   readonly canShareFiles = (() => {
     try {
@@ -80,6 +80,26 @@ export class Members {
       return false;
     }
   })();
+
+  /** iOS (Safari and installed web apps) ignores "download" links, so saving goes through the share sheet. */
+  private readonly isIos =
+    /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.userAgent.includes('Mac') && navigator.maxTouchPoints > 1);
+  /** True when this page is on a secure connection (https or localhost), which the share sheet requires. */
+  readonly secure = window.isSecureContext;
+
+  /**
+   * A real <a href="mailto:…"> that the person taps (phones block mail links opened from code).
+   * Web pages cannot attach files to these, so the draft carries the ID; use Share… to attach the picture.
+   */
+  readonly mailtoHref = computed(() => {
+    const m = this.passMember();
+    if (!m) return '';
+    const subject = encodeURIComponent(`Your GymPass QR — ${m.id}`);
+    const body = encodeURIComponent(
+      `Hi ${m.name},\n\nYour GymPass member ID is ${m.id}.\nMembership expires on ${m.expiresOn}.\n\nPresent your QR code at the gym to check in.`,
+    );
+    return `mailto:${m.email}?subject=${subject}&body=${body}`;
+  });
 
   // ---- delete ----
   readonly deleteTarget = signal<Member | null>(null);
@@ -153,7 +173,7 @@ export class Members {
         this.formOpen.set(false);
         this.showPass(member, qrCode);
         if (!this.sync.reachable()) {
-          this.emailNotice.set('Saved on this device. It will upload automatically when you are back online.');
+          this.passNotice.set('Saved on this device. It will upload automatically when you are back online.');
         }
       }
     } catch (error) {
@@ -203,7 +223,7 @@ export class Members {
   private showPass(member: Member, qrCode: string) {
     this.passMember.set(member);
     this.qrCode.set(qrCode);
-    this.emailNotice.set('');
+    this.passNotice.set('');
     this.emailFallback.set(false);
   }
 
@@ -211,13 +231,31 @@ export class Members {
     this.passMember.set(null);
   }
 
-  saveQr() {
+  /**
+   * Saves the QR picture. Desktop and Android download it; iPhone/iPad open the share sheet
+   * (choose "Save Image" to keep it in Photos, or Mail/Gmail/Messages to send it).
+   */
+  async saveQr() {
     const member = this.passMember();
     if (!member) return;
+    if (this.isIos) {
+      if (this.canShareFiles) {
+        await this.shareQr();
+      } else {
+        this.passNotice.set('Press and hold the QR picture, then choose “Save to Photos”.');
+      }
+      return;
+    }
+    const file = dataUrlToFile(this.qrCode(), `${member.id}.png`);
+    const url = URL.createObjectURL(file);
     const link = document.createElement('a');
-    link.href = this.qrCode();
-    link.download = `${member.id}.png`;
+    link.href = url;
+    link.download = file.name;
+    document.body.appendChild(link);
     link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 15_000);
+    this.passNotice.set(`Saved ${file.name}. Check your Downloads folder.`);
   }
 
   /** Server email: the QR is both shown in the message and attached as a PNG file. */
@@ -225,22 +263,25 @@ export class Members {
     const member = this.passMember();
     if (!member) return;
     this.emailing.set(true);
-    this.emailNotice.set('');
+    this.passNotice.set('');
     this.emailFallback.set(false);
     // The server can only email a member it already knows, so push pending changes first.
     void this.sync.syncNow().then(() => {
       this.api.emailMemberQr(member.id).subscribe({
         next: () => {
           this.emailing.set(false);
-          this.emailNotice.set(`Email sent to ${member.email} with the QR image attached.`);
+          this.passNotice.set(`Email sent to ${member.email} with the QR image attached.`);
         },
         error: (error: HttpErrorResponse) => {
           this.emailing.set(false);
           this.emailFallback.set(true);
-          this.emailNotice.set(
+          const serverReason = typeof error.error?.error === 'string' ? error.error.error : '';
+          this.passNotice.set(
             error.status === 503
-              ? 'The server has no email account set up yet, so it cannot send the email itself. You can still send the QR image another way:'
-              : 'Could not send from the server (you may be offline). You can still send the QR image another way:',
+              ? 'The server has no email account set up yet, so it cannot send the email itself.'
+              : error.status === 502 && serverReason
+                ? serverReason
+                : 'Could not reach the server to send the email (you may be offline).',
           );
         },
       });
@@ -259,21 +300,8 @@ export class Members {
       });
     } catch (error) {
       if ((error as DOMException)?.name !== 'AbortError') {
-        this.emailNotice.set('Sharing is not available here. Use “Open email app” instead.');
+        this.passNotice.set('Sharing is not available on this device or connection. Save the QR and attach it yourself.');
       }
     }
-  }
-
-  /** Last resort: a web page cannot attach files to mailto: links, so the PNG is saved for you to attach. */
-  openMailApp() {
-    const member = this.passMember();
-    if (!member) return;
-    this.saveQr();
-    const subject = encodeURIComponent(`Your GymPass QR — ${member.id}`);
-    const body = encodeURIComponent(
-      `Hi ${member.name},\n\nYour GymPass member ID is ${member.id}.\nMembership expires on ${member.expiresOn}.\n\n(Attach the QR image ${member.id}.png that was just saved to your Downloads folder.)`,
-    );
-    window.location.href = `mailto:${encodeURIComponent(member.email)}?subject=${subject}&body=${body}`;
-    this.emailNotice.set(`The image ${member.id}.png was saved to your Downloads folder. Attach it to the email that just opened.`);
   }
 }

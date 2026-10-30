@@ -10,6 +10,18 @@ const Database = require('better-sqlite3');
 const QRCode = require('qrcode');
 const nodemailer = require('nodemailer');
 
+// Optional .env file (KEY=VALUE per line) so email settings can live in one file instead of
+// having to set environment variables by hand. Real environment variables always win.
+const envFile = path.join(__dirname, '..', '.env');
+if (fs.existsSync(envFile)) {
+  for (const line of fs.readFileSync(envFile, 'utf8').split(/\r?\n/)) {
+    const match = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/);
+    if (match && !line.trim().startsWith('#') && process.env[match[1]] === undefined) {
+      process.env[match[1]] = match[2].replace(/^(['"])(.*)\1$/, '$2');
+    }
+  }
+}
+
 const PORT = Number(process.env.PORT) || 3000;
 const HTTPS_PORT = Number(process.env.HTTPS_PORT) || 3443;
 const certDir = process.env.GYMPASS_CERT_DIR || path.join(__dirname, '..', 'certs');
@@ -304,7 +316,16 @@ app.post('/api/members/:id/email', async (req, res) => {
     res.json({ sent: true });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Could not send the member QR email.' });
+    // Tell the person what to fix, without leaking server details.
+    let reason = 'The server could not send the email.';
+    if (error && error.code === 'EAUTH') {
+      reason = 'The email account refused the login. For Gmail, use an App password (see OFFLINE.md).';
+    } else if (error && ['ECONNECTION', 'ETIMEDOUT', 'ESOCKET', 'ENOTFOUND', 'ECONNREFUSED'].includes(error.code)) {
+      reason = 'The server could not reach the email provider. Check its internet connection and SMTP_HOST / SMTP_PORT.';
+    } else if (error && error.responseCode >= 500) {
+      reason = 'The email provider rejected the message.';
+    }
+    res.status(502).json({ error: reason });
   }
 });
 
